@@ -1,0 +1,42 @@
+{
+    "pluginmetadataversion": 2,
+    "name": "Binary Ninja Ollama Enhanced",
+    "type": [
+        "core",
+        "ui",
+        "architecture",
+        "binaryview",
+        "helper"
+    ],
+    "api": [
+        "python3"
+    ],
+    "description": "Enhanced version of Binary Ninja Ollama using requests library, with additional analysis features",
+    "longdescription": "This is an enhanced fork of the original Binary Ninja Ollama plugin by Austin Haggard. This version replaces the ollama library with requests for better compatibility, and adds new features for function explanation and vulnerability analysis. See https://github.com/dan1t0/binaryninja-ollama-enhanced for full description.",
+    "license": {
+        "name": "MIT",
+        "text": "Copyright (c) 2024 Dani Martinez (dan1t0)\nBased on original work by Austin Haggard\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+    },
+    "platforms": [
+        "Darwin",
+        "Linux",
+        "Windows"
+    ],
+    "installinstructions": {
+        "Darwin": "",
+        "Linux": "",
+        "Windows": ""
+    },
+    "dependencies": {
+        "pip": [
+            "networkx>=3.2.1",
+            "requests>=2.31.0"
+        ],
+        "other": [
+            "This plugin requires you to run an ollama server which can be setup at https://ollama.com. All models are free and open source and can be run on your own hardware."
+        ]
+    },
+    "version": "1.1.0",
+    "author": "Dani Martinez (dan1t0), based on work by Austin Haggard",
+    "minimumbinaryninjaversion": 4
+}
