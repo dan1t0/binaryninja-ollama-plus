@@ -36,6 +36,18 @@ class OllamaClient:
             self.port = None
             self.client = Session()
             self.model = None
+            
+            # Default generation parameters
+            self.default_params = {
+                "temperature": 0.2,        # Lower temperature for more deterministic responses
+                "num_predict": 4096,       # Maximum number of tokens to generate
+                "top_k": 40,              # Limits selection to the top 40 most probable tokens
+                "top_p": 0.9,             # Nucleus sampling, reduces randomness while maintaining diversity
+                "repeat_penalty": 1.1,     # Penalizes the repetition of tokens
+                "stop": ["\n\n", "```"],   # Stops generation at these tokens
+                "num_ctx": 4096           # Size of the input context
+            }
+            
             self._initialized = True
 
     def get_host(self):
@@ -128,7 +140,7 @@ class OllamaClient:
             response = self.client.get(f"http://{self.host}:{self.port}/v1/models")
             if response.status_code == 200:
                 data = response.json()
-                # Extraer los IDs de los modelos de la respuesta
+                # Extract the IDs of the models from the response
                 return [model['id'] for model in data.get('data', [])]
             else:
                 raise Exception(f"Server returned status code {response.status_code}")
@@ -146,11 +158,16 @@ class OllamaClient:
         Returns:
             str: The suggested variable name.
         """
+        
         prompt = (
                      f"In one word, what should the variable '{variable}' be named in the below Function? "
-                     f"The name must meet the following criteria: all lowercase letters, usable in Python code"
+                     f"The name must meet the following criteria:\n"
+                     f"1. All lowercase letters, usable in Python code.\n"
+                     f"2. Only return the variable name and no other explanation or text data included.\n"
+                     f"3. Your response must be a single word.\n"
+                     f"4. Avoid use Markdown in the output.\n"
         )
-        prompt += f"Function:\n{hlil}\n\n"
+        prompt += f"\nFunction:\n{hlil}\n\n"
         response = self.generate(
             model=self.model,
             prompt=prompt,
@@ -158,12 +175,12 @@ class OllamaClient:
         ) 
         
         if response and 'response' in response:
-            # Tomar la primera línea y limpiar espacios
+            # Take the first line and clean spaces
             variable_name = response['response'].strip().split('\n')[0].strip()
-            # Tomar solo la primera palabra y eliminar backticks
+            # Take only the first word and remove backticks
             variable_name = variable_name.split()[0].strip('`') if variable_name else None
             
-            # Verificar que el nombre es válido (una sola palabra en minúsculas)
+            # Check if the name is valid (one word in lowercase)
             if variable_name and variable_name.islower() and ' ' not in variable_name:
                 return variable_name
         
@@ -181,24 +198,28 @@ class OllamaClient:
         """
         prompt = (
             f"Given the following HLIL decompiled code snippet, provide a Python-style function name that describes what the code is doing. "
-            f"The name must meet the following criteria: all lowercase letters, usable in Python code, with underscores between words. "
-            f"Only return the function name and no other explanation or text data included."
+            f"The name must meet the following criteria:\n"
+            f"1. All lowercase letters, usable in Python code.\n"
+            f"2. Only return the function name and no other explanation or text data included.\n"
+            f"3. Your response must be a single word.\n"
+            f"4. Avoid use Markdown in the output.\n"
         )
-        prompt += f"Function:\n{hlil}\n\n"
+
+        prompt += f"\nFunction:\n{hlil}\n\n"
         response = self.generate(
             model=self.model,
             prompt=prompt,
             stream=False
         ) 
         
-        # Procesar la respuesta para extraer solo el nombre de la función
+        # Process the response to extract only the function name
         if response and 'response' in response:
-            # Tomar la primera línea y limpiar espacios
+            # Take the first line and clean spaces
             function_name = response['response'].strip().split('\n')[0].strip()
-            # Eliminar cualquier texto adicional después del nombre de la función
+            # Remove any text after the function name 
             function_name = function_name.split()[0] if function_name else None
             
-            # Verificar que el nombre cumple con los criterios
+            # Check if the name meets the criteria
             if function_name and function_name.islower() and '_' in function_name:
                 return function_name
         
@@ -221,14 +242,7 @@ class OllamaClient:
             "model": model,
             "prompt": prompt,
             "stream": stream,
-            # Parámetros de generación
-            "temperature": 0.2,        # Menor temperatura para respuestas más deterministas
-            "num_predict": 4096,       # Máximo número de tokens a generar
-            "top_k": 40,              # Limita la selección a los 40 tokens más probables
-            "top_p": 0.9,             # Nucleus sampling, reduce aleatoriedad manteniendo diversidad
-            "repeat_penalty": 1.1,     # Penaliza la repetición de tokens
-            "stop": ["\n\n", "```"],  # Detiene la generación en estos tokens
-            "num_ctx": 4096           # Tamaño del contexto de entrada
+            **self.default_params  # Unpack default parameters
         }
         response = self.client.post(url, json=data)
         if response.status_code == 200:
@@ -284,11 +298,17 @@ class OllamaClient:
             str: The explanation of the function/code.
         """
         prompt = (
-            f"Analyze the following decompiled code snippet and explain its functionality. "
-            f"Focus on the main purpose, inputs, outputs, and key operations. "
-            f"Provide a clear and concise technical explanation."
+            f"Given the following HLIL decompiled code snippet. "
+            f"Analyze and explain the following function in detail. Include:\n"
+            f"1. Main purpose of the function\n"
+            f"2. Input parameters and return values\n"
+            f"3. Key operations and algorithms used\n"
+            f"4. Important code patterns or structures\n"
+            f"5. Any notable edge cases or error handling\n"
+            f"6. Avoid use Markdown in the output.\n"
         )
-        prompt += f"\nCode:\n{hlil}\n\n"
+
+        prompt += f"\nCode:\n```\n{hlil}\n```\n\n"
         response = self.generate(
             model=self.model,
             prompt=prompt,
@@ -315,14 +335,19 @@ class OllamaClient:
         Returns:
             str: The vulnerability analysis report.
         """
+        
         prompt = (
+            f"Given the following HLIL decompiled code snippet. "
             f"Analyze the following decompiled code for potential security vulnerabilities. "
-            f"Focus on: buffer overflows, stack overflows, integer overflows, use-after-free, "
-            f"format string vulnerabilities, and any other security-critical issues. "
-            f"If vulnerabilities are found, explain why they are dangerous and how they could be exploited. "
-            f"If no obvious vulnerabilities are found, explain why the code appears secure."
+            f"Focus on: "
+            f"1. Buffer overflows, stack overflows, integer overflows, use-after-free, "
+            f"format string vulnerabilities, and any other security-critical issues.\n"
+            f"2. If vulnerabilities are found, explain why they are dangerous and how they could be exploited.\n"
+            f"3. Be specific and reference the relevant parts of the code in your analysis.\n"
+            f"4. Avoid use Markdown in the output.\n"
         )
-        prompt += f"\nCode:\n{hlil}\n\n"
+
+        prompt += f"\nCode:\n```\n{hlil}\n```\n\n"
         response = self.generate(
             model=self.model,
             prompt=prompt,
